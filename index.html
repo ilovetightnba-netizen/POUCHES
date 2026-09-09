@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Interval</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Interval">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#2B2724">
+<meta name="color-scheme" content="dark">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<style>
+:root{
+  --ground:#2B2724;
+  --surface:#363029;
+  --surface-2:#403830;
+  --chalk:#EFE7DB;
+  --graphite:#9A8E82;
+  --hairline:#4A423A;
+  --ink:#1B1815;
+  --i1:#CFE3DA;
+  --i2:#E6D2A8;
+  --i3:#DFA97C;
+  --i4:#C97A54;
+  --i5:#A64B32;
+  --unrated:#7E7368;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--ground);color:var(--chalk)}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-size:16px;line-height:1.45;
+  overscroll-behavior-y:none;
+  -webkit-font-smoothing:antialiased;
+  padding-top:env(safe-area-inset-top);
+}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+
+#app{max-width:520px;margin:0 auto;padding:0 20px 96px;padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+.view{display:none}
+.view.on{display:block}
+
+/* header */
+.top{display:flex;justify-content:space-between;align-items:baseline;padding:16px 0 4px}
+.top .date{font-size:15px;color:var(--graphite)}
+.top .count{font-size:15px}
+
+/* ring */
+.ringwrap{position:relative;width:100%;max-width:320px;margin:8px auto 0;aspect-ratio:1}
+.ringwrap svg{width:100%;height:100%;display:block}
+.center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
+.since{font-size:38px;letter-spacing:-1.5px;line-height:1}
+.since.small{font-size:27px}
+.sincelabel{font-size:12px;color:var(--graphite);margin-top:7px;max-width:128px}
+.statechip{margin-top:12px;font-size:13px;padding:4px 11px;border-radius:999px;border:1px solid var(--hairline);color:var(--graphite)}
+.statechip.wait{color:var(--i4);border-color:var(--i4)}
+.statechip.clear{color:var(--i1);border-color:var(--i1)}
+
+/* log button */
+.logbtn{
+  display:block;width:100%;margin:22px 0 0;padding:19px;
+  background:var(--chalk);color:var(--ink);border-radius:14px;
+  font-size:18px;font-weight:600;
+}
+.logbtn:active{transform:scale(.985)}
+.logbtn.muted{background:none;color:var(--i1);border:1px solid var(--i1);
+  margin-top:10px;padding:15px;font-size:16px;font-weight:500}
+.statechip.hold{color:var(--i1);border-color:var(--i1)}
+
+/* intensity */
+.rate{margin-top:14px;overflow:hidden;max-height:0;transition:max-height .28s ease}
+.rate.open{max-height:210px}
+.remind{width:100%;margin-top:11px;padding:13px;border-radius:11px;
+  background:var(--surface);color:var(--graphite);font-size:14px}
+.rate p{margin:0 0 9px;font-size:14px;color:var(--graphite)}
+.dots{display:flex;gap:9px}
+.dot{flex:1;height:52px;border-radius:11px;background:var(--surface);
+  display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--chalk)}
+.dot span{width:15px;height:15px;border-radius:50%;display:block}
+.dot.on{outline:2px solid var(--chalk);outline-offset:-2px}
+
+/* today strip */
+h2{font-size:15px;font-weight:600;margin:30px 0 10px;color:var(--chalk)}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{font-size:13px;padding:5px 10px;border-radius:8px;background:var(--surface);
+  display:flex;align-items:center;gap:7px}
+.chip i{width:8px;height:8px;border-radius:50%;display:block;flex:none}
+.empty{color:var(--graphite);font-size:14px;margin:0}
+
+/* baseline banner */
+.note{background:var(--surface);border-radius:13px;padding:15px 16px;margin-top:22px}
+.note h3{margin:0 0 5px;font-size:15px;font-weight:600}
+.note p{margin:0;font-size:14px;color:var(--graphite)}
+.note .row{display:flex;gap:9px;margin-top:13px}
+.note button{flex:1;padding:11px;border-radius:9px;background:var(--surface-2);font-size:14px}
+.note button.go{background:var(--chalk);color:var(--ink);font-weight:600}
+
+/* history */
+.day{border-top:1px solid var(--hairline);padding:15px 0}
+.day .h{display:flex;justify-content:space-between;font-size:14px;color:var(--graphite);margin-bottom:9px}
+.row-log{display:flex;align-items:center;gap:11px;padding:7px 0}
+.row-log i{width:9px;height:9px;border-radius:50%;flex:none}
+.row-log .t{font-size:15px;width:82px}
+.row-log .g{font-size:13px;color:var(--graphite);flex:1}
+.row-log button{font-size:13px;color:var(--graphite);padding:5px 8px}
+
+/* patterns */
+.bars{display:flex;align-items:flex-end;gap:3px;height:120px;margin-top:6px}
+.bars div{flex:1;background:var(--surface-2);border-radius:2px 2px 0 0;min-height:2px}
+.axis{display:flex;justify-content:space-between;font-size:12px;color:var(--graphite);margin-top:6px}
+.gaps{margin-top:8px}
+.gapbar{display:flex;align-items:center;gap:9px;margin-bottom:5px}
+.gapbar .b{height:11px;border-radius:3px;min-width:3px}
+.gapbar .l{font-size:12px;color:var(--graphite);width:62px;flex:none}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--hairline);
+  border-radius:12px;overflow:hidden;margin-top:10px}
+.stats div{background:var(--ground);padding:14px}
+.stats b{display:block;font-size:22px;font-weight:500;letter-spacing:-.5px}
+.stats small{color:var(--graphite);font-size:13px}
+.wow{margin-top:12px}
+.wow div{display:flex;align-items:baseline;gap:10px;padding:7px 0;
+  border-top:1px solid var(--hairline)}
+.wow div:first-child{border-top:none}
+.wow span{flex:1;font-size:14px;color:var(--graphite)}
+.wow b{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
+.wow em{font-style:normal;font-size:13px;width:56px;text-align:right;
+  font-variant-numeric:tabular-nums}
+.chip.resist{background:none;border:1px dashed var(--hairline)}
+
+/* settings */
+.field{padding:16px 0;border-top:1px solid var(--hairline)}
+.field label{display:block;font-size:15px;margin-bottom:4px}
+.field .hint{font-size:13px;color:var(--graphite);margin:0 0 10px}
+.field input[type=number],.field input[type=time],.field textarea{
+  width:100%;padding:11px;border-radius:9px;border:1px solid var(--hairline);
+  background:var(--surface);color:var(--chalk);font:inherit}
+.field textarea{height:110px;font-size:12px;font-family:ui-monospace,monospace}
+.inline{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.inline input[type=number]{width:96px}
+.sw{width:52px;height:31px;border-radius:999px;background:var(--surface-2);position:relative;flex:none;transition:background .18s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:25px;height:25px;border-radius:50%;
+  background:var(--chalk);transition:transform .18s}
+.sw.on{background:var(--i1)}
+.sw.on::after{transform:translateX(21px);background:var(--ink)}
+.btnrow{display:flex;gap:9px;margin-top:11px}
+.btnrow button{flex:1;padding:12px;border-radius:9px;background:var(--surface-2);font-size:14px}
+.danger{color:var(--i5)}
+
+/* tabs */
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;
+  background:rgba(43,39,36,.94);backdrop-filter:blur(14px);
+  border-top:1px solid var(--hairline);
+  padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;padding:13px 4px 12px;font-size:12px;color:var(--graphite)}
+nav button.on{color:var(--chalk)}
+
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));
+  transform:translateX(-50%);background:var(--chalk);color:var(--ink);
+  padding:10px 17px;border-radius:999px;font-size:14px;opacity:0;
+  transition:opacity .2s;pointer-events:none;white-space:nowrap;z-index:9}
+.toast.on{opacity:1}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- NOW -->
+<section id="v-now" class="view on">
+  <div class="top"><span class="date" id="today-date"></span><span class="count" id="today-count"></span></div>
+  <div class="ringwrap">
+    <svg viewBox="0 0 240 240" aria-hidden="true">
+      <circle cx="120" cy="120" r="94" fill="none" stroke="var(--hairline)" stroke-width="1"/>
+      <g id="hourlabels"></g>
+      <g id="ticks"></g>
+      <line id="nowmark" stroke="var(--chalk)" stroke-width="1.5" opacity=".55"/>
+      <circle id="gap-track" cx="120" cy="120" r="70" fill="none" stroke="var(--surface-2)"
+              stroke-width="6" opacity="0"/>
+      <path id="gap-fill" fill="none" stroke="var(--i4)" stroke-width="6" stroke-linecap="round"/>
+    </svg>
+    <div class="center">
+      <div class="since mono" id="since">—</div>
+      <div class="sincelabel" id="since-label">nothing logged yet</div>
+      <div class="statechip" id="state-chip" hidden></div>
+    </div>
+  </div>
+
+  <button class="logbtn" id="log-btn">Log a pouch</button>
+  <button class="logbtn muted" id="resist-btn">I wanted one and didn't</button>
+
+  <div class="rate" id="rate">
+    <p id="rate-q">How strong was the craving?</p>
+    <div class="dots" id="dots"></div>
+    <button class="remind" id="remind-btn" hidden>Set the gap reminder</button>
+  </div>
+
+  <div id="baseline-note"></div>
+
+  <h2 id="strip-h">Today</h2>
+  <div class="chips" id="today-chips"></div>
+</section>
+
+<!-- HISTORY -->
+<section id="v-history" class="view">
+  <div class="top"><span class="date">History</span><span class="count" id="hist-total"></span></div>
+  <div class="btnrow" style="margin-top:14px">
+    <button id="add-past">Add a past entry</button>
+  </div>
+  <div id="hist-body"></div>
+</section>
+
+<!-- PATTERNS -->
+<section id="v-patterns" class="view">
+  <div class="top"><span class="date">Patterns</span></div>
+  <div id="trend"></div>
+  <div class="stats" id="stat-grid"></div>
+  <h2>Pouches per day, last 14 days</h2>
+  <div class="bars" id="daybars"></div>
+  <div class="axis"><span id="ax-l"></span><span id="ax-r"></span></div>
+  <h2>Hour of day, all time</h2>
+  <div class="bars" id="hourbars"></div>
+  <div class="axis"><span id="hx-l"></span><span>noon</span><span id="hx-r"></span></div>
+  <h2>How long you held out</h2>
+  <div class="gaps" id="gaplist"></div>
+</section>
+
+<!-- SETTINGS -->
+<section id="v-settings" class="view">
+  <div class="top"><span class="date">Settings</span></div>
+
+  <div class="field">
+    <div class="inline"><label for="cap-n" style="margin:0">Daily cap</label><div class="sw" id="cap-sw"></div></div>
+    <p class="hint" id="cap-hint">A ceiling for the day. Logging past it still works.</p>
+    <div class="inline"><span style="font-size:14px;color:var(--graphite)">pouches per day</span><input type="number" id="cap-n" min="1" max="60" inputmode="numeric"></div>
+  </div>
+
+  <div class="field">
+    <div class="inline"><label for="gap-n" style="margin:0">Minimum gap</label><div class="sw" id="gap-sw"></div></div>
+    <p class="hint">The countdown in the ring. Raise it a little each week.</p>
+    <div class="inline"><span style="font-size:14px;color:var(--graphite)">minutes between</span><input type="number" id="gap-n" min="5" max="720" step="5" inputmode="numeric"></div>
+  </div>
+
+  <div class="field">
+    <div class="inline"><label style="margin:0">Reminder</label><div class="sw" id="rem-sw"></div></div>
+    <p class="hint">A nudge that lands a set time after your last log. Each new log pushes it later, so it only ever fires when you've gone quiet.</p>
+    <div class="inline"><span style="font-size:14px;color:var(--graphite)">minutes after a log</span><input type="number" id="rem-n" min="10" max="720" step="10" inputmode="numeric"></div>
+    <p class="hint" id="rem-note" style="margin-top:10px"></p>
+    <div class="inline" style="margin-top:12px">
+      <span style="font-size:14px">Set it automatically</span><div class="sw" id="auto-sw"></div>
+    </div>
+    <p class="hint">Fires when you rate a craving, so you never tap anything extra.</p>
+  </div>
+
+  <div class="field">
+    <label>Quiet hours</label>
+    <p class="hint">Automatic reminders that would land in this window are skipped. The button still works if you tap it yourself.</p>
+    <div class="inline">
+      <span style="font-size:14px;color:var(--graphite)">from</span><input type="time" id="q-from" style="width:130px">
+      <span style="font-size:14px;color:var(--graphite)">until</span><input type="time" id="q-to" style="width:130px">
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="sc-name">Shortcut name</label>
+    <p class="hint" id="shortcut-hint"></p>
+    <input type="text" id="sc-name" placeholder="Gap"
+           style="width:100%;padding:11px;border-radius:9px;border:1px solid var(--hairline);background:var(--surface);color:var(--chalk);font:inherit">
+  </div>
+
+  <div class="field">
+    <label for="daystart">Day starts at</label>
+    <p class="hint">Late nights count toward the day before, not the next one.</p>
+    <input type="time" id="daystart">
+  </div>
+
+  <div class="field">
+    <label>Baseline</label>
+    <p class="hint" id="bl-hint"></p>
+    <div class="btnrow"><button id="bl-end">End baseline and set my numbers</button></div>
+  </div>
+
+  <div class="field">
+    <label>Cost</label>
+    <p class="hint">Leave the price at zero to hide money from the Patterns tab entirely.</p>
+    <div class="inline"><span style="font-size:14px;color:var(--graphite)">price per tin</span><input type="number" id="tin-price" min="0" step="0.01" inputmode="decimal"></div>
+    <div class="inline" style="margin-top:10px"><span style="font-size:14px;color:var(--graphite)">pouches per tin</span><input type="number" id="tin-count" min="1" max="99" inputmode="numeric"></div>
+  </div>
+
+  <div class="field">
+    <label>Your data</label>
+    <p class="hint">It lives on this phone only. Copy a backup somewhere safe now and then.</p>
+    <div class="btnrow">
+      <button id="copy-csv">Copy as CSV</button>
+      <button id="dl-csv">Download CSV</button>
+    </div>
+    <div class="btnrow"><button id="show-json">Show backup text</button></div>
+    <textarea id="json-box" hidden placeholder="Paste a backup here and tap Restore"></textarea>
+    <div class="btnrow" id="json-actions" hidden><button id="restore">Restore from this text</button></div>
+  </div>
+
+  <div class="field">
+    <label>Start over</label>
+    <p class="hint">Deletes every log on this device. There is no undo.</p>
+    <div class="btnrow"><button class="danger" id="wipe">Delete everything</button></div>
+  </div>
+</section>
+
+</div>
+
+<nav>
+  <button data-v="now" class="on">Now</button>
+  <button data-v="history">History</button>
+  <button data-v="patterns">Patterns</button>
+  <button data-v="settings">Settings</button>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+var KEY = "interval.v1";
+var RAMP = ["#7E7368","#CFE3DA","#E6D2A8","#DFA97C","#C97A54","#A64B32"];
+
+/* ---------- state ---------- */
+var S = {
+  logs: [],                 // [{t: epoch ms, i: 0-5}]  i=0 means unrated
+  cap: 8, capOn: false,
+  gap: 60, gapOn: false,
+  dayStart: 240,            // minutes past midnight
+  baselineStart: null,
+  baselineDone: false,
+  shortcutName: "Gap",
+  remindOn: false,
+  remindMins: 120,
+  autoRemind: true,
+  quietFrom: 1380,
+  quietTo: 480,
+  firedFor: 0,
+  tinPrice: 0,
+  tinCount: 15,
+  lastParam: ""
+};
+
+function load(){
+  try{
+    var raw = localStorage.getItem(KEY);
+    if(raw){ var o = JSON.parse(raw); for(var k in S){ if(o[k] !== undefined) S[k] = o[k]; } }
+  }catch(e){ console.warn("load failed", e); }
+  S.logs.sort(function(a,b){ return a.t - b.t; });
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); }
+  catch(e){ toast("Couldn't save — storage is full or blocked"); }
+}
+
+/* ---------- time helpers ---------- */
+function dayKey(ms){                       // which "day" a log belongs to
+  var d = new Date(ms - S.dayStart*60000);
+  return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+}
+function pad(n){ return n<10 ? "0"+n : ""+n; }
+function clockTime(ms){
+  var d = new Date(ms), h = d.getHours(), m = d.getMinutes();
+  var ap = h < 12 ? "am" : "pm"; h = h % 12; if(h === 0) h = 12;
+  return h+":"+pad(m)+ap;
+}
+function dur(msSpan){
+  var mins = Math.floor(msSpan/60000);
+  if(mins < 60) return mins+"m";
+  var h = Math.floor(mins/60), m = mins%60;
+  if(h < 24) return h+"h "+pad(m)+"m";
+  return Math.floor(h/24)+"d "+(h%24)+"h";
+}
+function longDate(ms){
+  return new Date(ms).toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
+}
+
+/* ---------- derived ---------- */
+/* a log is a pouch unless k === "r" (a craving you resisted) */
+function isPouch(l){ return l.k !== "r"; }
+function pouches(){ return S.logs.filter(isPouch); }
+function todayLogs(){ var k = dayKey(Date.now()); return pouches().filter(function(l){ return dayKey(l.t) === k; }); }
+function todayAll(){ var k = dayKey(Date.now()); return S.logs.filter(function(l){ return dayKey(l.t) === k; }); }
+function last(){ var p = pouches(); return p.length ? p[p.length-1] : null; }
+
+/* the most recent resist with no pouch after it — still being held */
+function openResist(){
+  for(var i = S.logs.length - 1; i >= 0; i--){
+    if(isPouch(S.logs[i])) return null;
+    if(S.logs[i].k === "r") return S.logs[i];
+  }
+  return null;
+}
+/* every resist paired with how long it lasted before the next pouch */
+function holds(){
+  var out = [];
+  S.logs.forEach(function(l, i){
+    if(l.k !== "r") return;
+    for(var j = i + 1; j < S.logs.length; j++){
+      if(isPouch(S.logs[j])){ out.push({ at: l.t, i: l.i, held: S.logs[j].t - l.t }); return; }
+    }
+    out.push({ at: l.t, i: l.i, held: null });
+  });
+  return out;
+}
+
+function byDay(){
+  var m = {};
+  pouches().forEach(function(l){ (m[dayKey(l.t)] = m[dayKey(l.t)] || []).push(l); });
+  return m;
+}
+function sameDayGaps(){                     // minutes, only within one day
+  var m = byDay(), out = [];
+  Object.keys(m).forEach(function(k){
+    var a = m[k];
+    for(var i=1;i<a.length;i++) out.push((a[i].t - a[i-1].t)/60000);
+  });
+  return out;
+}
+function median(a){
+  if(!a.length) return 0;
+  var s = a.slice().sort(function(x,y){ return x-y; }), h = Math.floor(s.length/2);
+  return s.length % 2 ? s[h] : (s[h-1]+s[h])/2;
+}
+function baselineDays(){
+  if(!S.baselineStart) return 0;
+  return Math.floor((Date.now() - S.baselineStart)/86400000);
+}
+function inBaseline(){ return !S.baselineDone; }
+
+/* ---------- logging ---------- */
+var pendingIdx = -1, rateTimer = null;
+
+function addLog(ms, intensity, kind){
+  var entry = { t: ms, i: intensity || 0 };
+  if(kind === "r") entry.k = "r";
+  S.logs.push(entry);
+  S.logs.sort(function(a,b){ return a.t - b.t; });
+  if(!S.baselineStart) S.baselineStart = ms;
+  save();
+  return S.logs.indexOf(entry);
+}
+
+function logNow(){
+  var open = openResist();
+  pendingIdx = addLog(Date.now(), 0);
+  if(open) toast("You held out " + dur(Date.now() - open.t));
+  openRate();
+  render();
+  autoFire();
+}
+
+function logResist(){
+  pendingIdx = addLog(Date.now(), 0, "r");
+  openRate();
+  render();
+}
+
+/* fire the nudge the moment a pouch is logged, before any rating.
+   iOS will jump to Shortcuts; the rating panel is restored on return. */
+function autoFire(){
+  if(!(S.remindOn && S.autoRemind)) return;
+  var L = last(); if(!L) return;
+  if(S.firedFor === L.t) return;
+  S.firedFor = L.t; save();
+  setTimeout(function(){ fireReminder(false); }, 250);
+}
+
+/* if the newest log is unrated and recent, reopen the rating panel —
+   this is what survives the bounce out to Shortcuts */
+function resumeRate(){
+  if(!S.logs.length) return;
+  var idx = S.logs.length - 1, L = S.logs[idx];
+  if(L.i === 0 && Date.now() - L.t < 600000){ pendingIdx = idx; openRate(); }
+}
+
+function openRate(){
+  document.getElementById("rate").classList.add("open");
+  document.getElementById("remind-btn").hidden = !S.remindOn;
+  var L = pendingIdx >= 0 ? S.logs[pendingIdx] : null;
+  document.getElementById("rate-q").textContent =
+    (L && L.k === "r") ? "How strong was the one you turned down?" : "How strong was the craving?";
+  paintDots(0);
+  clearTimeout(rateTimer);
+  rateTimer = setTimeout(closeRate, 30000);
+}
+function closeRate(){
+  document.getElementById("rate").classList.remove("open");
+  pendingIdx = -1;
+}
+function paintDots(sel){
+  var box = document.getElementById("dots");
+  box.innerHTML = "";
+  for(var n=1;n<=5;n++){
+    (function(n){
+      var b = document.createElement("button");
+      b.className = "dot" + (sel === n ? " on" : "");
+      b.setAttribute("aria-label", "craving " + n + " of 5");
+      var s = document.createElement("span");
+      s.style.background = RAMP[n];
+      b.appendChild(s);
+      b.onclick = function(){
+        if(pendingIdx < 0) return;
+        S.logs[pendingIdx].i = n;
+        save(); paintDots(n); render();
+        clearTimeout(rateTimer);
+        rateTimer = setTimeout(closeRate, 700);
+      };
+      box.appendChild(b);
+    })(n);
+  }
+}
+
+/* ---------- reminders ---------- */
+function reminderMinutes(){
+  return (S.gapOn && S.gap > 0) ? S.gap : S.remindMins;
+}
+function inQuiet(ms){
+  if(S.quietFrom === S.quietTo) return false;
+  var d = new Date(ms), m = d.getHours()*60 + d.getMinutes();
+  return S.quietFrom < S.quietTo
+    ? (m >= S.quietFrom && m < S.quietTo)
+    : (m >= S.quietFrom || m < S.quietTo);
+}
+function fireReminder(manual){
+  if(!S.remindOn) return;
+  var mins = reminderMinutes();
+  if(!manual && inQuiet(Date.now() + mins*60000)) return;
+  location.href = "shortcuts://run-shortcut?name=" + encodeURIComponent(S.shortcutName) +
+                  "&input=text&text=" + mins;
+}
+
+/* ---------- ring ---------- */
+function angleFor(ms){                       // degrees, day start at top
+  var d = new Date(ms);
+  var mins = d.getHours()*60 + d.getMinutes();
+  var rel = ((mins - S.dayStart) % 1440 + 1440) % 1440;
+  return (rel/1440)*360 - 90;
+}
+function pt(deg, r){
+  var rad = deg*Math.PI/180;
+  return [120 + r*Math.cos(rad), 120 + r*Math.sin(rad)];
+}
+function arc(fromDeg, sweepDeg, r){
+  if(sweepDeg <= 0) return "";
+  if(sweepDeg >= 359.9) sweepDeg = 359.9;
+  var a = pt(fromDeg, r), b = pt(fromDeg + sweepDeg, r);
+  return "M"+a[0].toFixed(2)+","+a[1].toFixed(2)+
+         " A"+r+","+r+" 0 "+(sweepDeg>180?1:0)+",1 "+b[0].toFixed(2)+","+b[1].toFixed(2);
+}
+
+function drawRing(){
+  var ticks = document.getElementById("ticks"), ns = "http://www.w3.org/2000/svg";
+  ticks.innerHTML = "";
+  todayAll().forEach(function(l){
+    var a = angleFor(l.t);
+    var resist = l.k === "r";
+    var p1 = pt(a, resist ? 104 : 86), p2 = pt(a, resist ? 112 : 102);
+    var ln = document.createElementNS(ns,"line");
+    ln.setAttribute("x1",p1[0].toFixed(2)); ln.setAttribute("y1",p1[1].toFixed(2));
+    ln.setAttribute("x2",p2[0].toFixed(2)); ln.setAttribute("y2",p2[1].toFixed(2));
+    ln.setAttribute("stroke", RAMP[l.i]);
+    ln.setAttribute("stroke-width", resist ? 2.5 : (l.i ? 3.5 : 2.5));
+    ln.setAttribute("stroke-linecap","round");
+    if(resist) ln.setAttribute("opacity",".75");
+    ticks.appendChild(ln);
+  });
+
+  var labels = document.getElementById("hourlabels");
+  labels.innerHTML = "";
+  for(var q=0;q<4;q++){
+    var mins = (S.dayStart + q*360) % 1440;
+    var h = Math.floor(mins/60), ap = h<12?"a":"p", hh = h%12; if(hh===0) hh=12;
+    var a2 = (q/4)*360 - 90, p = pt(a2, 114);
+    var tx = document.createElementNS(ns,"text");
+    tx.setAttribute("x",p[0].toFixed(1)); tx.setAttribute("y",(p[1]+4).toFixed(1));
+    tx.setAttribute("text-anchor","middle");
+    tx.setAttribute("fill","var(--graphite)"); tx.setAttribute("font-size","11");
+    tx.textContent = hh+ap;
+    labels.appendChild(tx);
+  }
+
+  var nm = document.getElementById("nowmark"), an = angleFor(Date.now());
+  var n1 = pt(an, 104), n2 = pt(an, 111);
+  nm.setAttribute("x1",n1[0].toFixed(2)); nm.setAttribute("y1",n1[1].toFixed(2));
+  nm.setAttribute("x2",n2[0].toFixed(2)); nm.setAttribute("y2",n2[1].toFixed(2));
+
+  // inner ring: the gap, drawn as a full circle of progress so a 40-minute
+  // countdown is as readable as a four-hour one
+  var track = document.getElementById("gap-track"), fill = document.getElementById("gap-fill"), L = last();
+  if(L && S.gapOn && S.gap > 0){
+    var frac = Math.min((Date.now() - L.t)/60000 / S.gap, 1);
+    track.setAttribute("opacity","1");
+    fill.setAttribute("d", arc(-90, frac*359.9, 70));
+    fill.setAttribute("stroke", frac >= 1 ? "var(--i1)" : "var(--i4)");
+  } else {
+    track.setAttribute("opacity","0"); fill.setAttribute("d","");
+  }
+}
+
+/* ---------- render ---------- */
+function render(){
+  var L = last(), now = Date.now();
+
+  document.getElementById("today-date").textContent = longDate(now);
+  var tl = todayLogs();
+  document.getElementById("today-count").textContent =
+    tl.length + (S.capOn ? " of " + S.cap : (tl.length === 1 ? " pouch" : " pouches"));
+
+  var since = document.getElementById("since"), lab = document.getElementById("since-label");
+  if(L){
+    var span = now - L.t, txt = dur(span);
+    since.textContent = txt;
+    since.className = "since mono" + (txt.length > 6 ? " small" : "");
+    lab.textContent = "since " + clockTime(L.t);
+  } else {
+    since.textContent = "—"; since.className = "since mono";
+    lab.textContent = "nothing logged yet";
+  }
+
+  var chip = document.getElementById("state-chip"), held = openResist();
+  if(held){
+    chip.hidden = false; chip.className = "statechip hold";
+    chip.textContent = "holding out " + dur(now - held.t);
+  } else if(L && S.gapOn){
+    var left = S.gap*60000 - (now - L.t);
+    chip.hidden = false;
+    if(left > 0){ chip.className = "statechip wait"; chip.textContent = dur(left) + " to go"; }
+    else { chip.className = "statechip clear"; chip.textContent = "past your gap"; }
+  } else if(S.capOn && tl.length >= S.cap){
+    chip.hidden = false; chip.className = "statechip wait"; chip.textContent = "at your cap for today";
+  } else { chip.hidden = true; }
+
+  drawRing();
+  drawBaselineNote();
+
+  var strip = document.getElementById("today-chips");
+  var ta = todayAll();
+  strip.innerHTML = "";
+  if(!ta.length){
+    strip.innerHTML = '<p class="empty">Nothing yet today.</p>';
+  } else {
+    var prevPouch = null;
+    ta.forEach(function(l){
+      var c = document.createElement("span");
+      c.className = "chip" + (l.k === "r" ? " resist" : "");
+      var d = document.createElement("i");
+      if(l.k === "r"){ d.style.background = "transparent"; d.style.border = "2px solid " + RAMP[l.i]; }
+      else { d.style.background = RAMP[l.i]; }
+      c.appendChild(d);
+      var t = document.createElement("span"); t.textContent = clockTime(l.t);
+      c.appendChild(t);
+      var g = document.createElement("span");
+      g.style.color = "var(--graphite)";
+      if(l.k === "r"){ g.textContent = "resisted"; c.appendChild(g); }
+      else if(prevPouch){ g.textContent = "+" + dur(l.t - prevPouch.t); c.appendChild(g); }
+      if(l.k !== "r") prevPouch = l;
+      strip.appendChild(c);
+    });
+  }
+
+  if(document.getElementById("v-history").classList.contains("on")) drawHistory();
+  if(document.getElementById("v-patterns").classList.contains("on")) drawPatterns();
+}
+
+function drawBaselineNote(){
+  var box = document.getElementById("baseline-note");
+  if(!inBaseline() || !S.baselineStart){ box.innerHTML = ""; return; }
+  var d = baselineDays();
+  if(d < 7){
+    box.innerHTML = '<div class="note"><h3>Baseline, day '+(d+1)+' of 7</h3>'+
+      '<p>No cap and no gap yet. Use as normal so the numbers you set next are your real ones.</p></div>';
+    return;
+  }
+  var sug = suggest();
+  box.innerHTML = '<div class="note"><h3>Seven days in</h3>'+
+    '<p>You averaged about '+sug.perDay+' a day, with a typical gap of '+sug.medGap+' minutes. '+
+    'A first step down would be a cap of '+sug.cap+' and a gap of '+sug.gap+' minutes.</p>'+
+    '<div class="row"><button class="go" id="bl-accept">Use those</button>'+
+    '<button id="bl-later">Keep logging</button></div></div>';
+  document.getElementById("bl-accept").onclick = applySuggestion;
+  document.getElementById("bl-later").onclick = function(){
+    S.baselineStart = Date.now(); save(); render();
+  };
+}
+
+function suggest(){
+  var m = byDay(), counts = Object.keys(m).map(function(k){ return m[k].length; });
+  var perDay = Math.round(median(counts)) || 1;
+  var medGap = Math.round(median(sameDayGaps())) || 60;
+  return {
+    perDay: perDay,
+    medGap: medGap,
+    cap: Math.max(1, perDay - 1),
+    gap: Math.max(5, Math.round(medGap * 1.15 / 5) * 5)
+  };
+}
+function applySuggestion(){
+  var s = suggest();
+  S.cap = s.cap; S.gap = s.gap; S.capOn = true; S.gapOn = true; S.baselineDone = true;
+  save(); render(); syncSettings();
+  toast("Cap " + s.cap + ", gap " + s.gap + "m");
+}
+
+/* ---------- history ---------- */
+function drawHistory(){
+  var body = document.getElementById("hist-body");
+  var np = pouches().length, nr = S.logs.length - np;
+  document.getElementById("hist-total").textContent =
+    np + (np === 1 ? " pouch" : " pouches") + (nr ? ", " + nr + " resisted" : "");
+  body.innerHTML = "";
+  if(!S.logs.length){ body.innerHTML = '<p class="empty" style="margin-top:20px">Nothing logged yet.</p>'; return; }
+
+  var m = {};
+  S.logs.forEach(function(l){ (m[dayKey(l.t)] = m[dayKey(l.t)] || []).push(l); });
+  var keys = Object.keys(m).sort().reverse();
+  keys.forEach(function(k){
+    var a = m[k].slice().sort(function(x,y){ return x.t - y.t; });
+    var wrap = document.createElement("div"); wrap.className = "day";
+    var head = document.createElement("div"); head.className = "h";
+    var dayPouches = a.filter(isPouch).length;
+    head.innerHTML = "<span>"+longDate(a[0].t)+"</span><span>"+dayPouches+"</span>";
+    wrap.appendChild(head);
+
+    var prev = null;
+    a.forEach(function(l){
+      var r = document.createElement("div"); r.className = "row-log";
+      var dot = document.createElement("i");
+      if(l.k === "r"){ dot.style.background = "transparent"; dot.style.border = "2px solid " + RAMP[l.i]; }
+      else { dot.style.background = RAMP[l.i]; }
+      var t = document.createElement("span"); t.className = "t mono"; t.textContent = clockTime(l.t);
+      var g = document.createElement("span"); g.className = "g";
+      if(l.k === "r"){
+        var h = holds().filter(function(x){ return x.at === l.t; })[0];
+        g.textContent = "resisted" + (h && h.held !== null ? ", held " + dur(h.held) : ", still holding");
+        g.style.color = "var(--i1)";
+      } else {
+        g.textContent = prev ? dur(l.t - prev.t) + " after the last" : "first of the day";
+      }
+      var del = document.createElement("button"); del.textContent = "Delete";
+      del.onclick = function(){
+        var at = S.logs.indexOf(l);
+        if(at > -1){ S.logs.splice(at,1); save(); render(); drawHistory(); toast("Deleted"); }
+      };
+      if(isPouch(l)) prev = l;
+      r.appendChild(dot); r.appendChild(t); r.appendChild(g); r.appendChild(del);
+      wrap.appendChild(r);
+    });
+    body.appendChild(wrap);
+  });
+}
+
+function addPast(){
+  var s = prompt("When? Use 24-hour time, or a date and time.\n\nExamples:  14:30    or    2026-09-07 22:15");
+  if(!s) return;
+  s = s.trim();
+  var ms = null;
+  if(/^\d{1,2}:\d{2}$/.test(s)){
+    var p = s.split(":"), d = new Date();
+    d.setHours(+p[0], +p[1], 0, 0);
+    if(d.getTime() > Date.now()) d.setDate(d.getDate() - 1);
+    ms = d.getTime();
+  } else {
+    var parsed = new Date(s.replace(" ","T"));
+    if(!isNaN(parsed.getTime())) ms = parsed.getTime();
+  }
+  if(ms === null){ toast("Couldn't read that time"); return; }
+  var iv = prompt("Craving 1-5? Leave blank to skip.");
+  var i = parseInt(iv, 10); if(!(i >= 1 && i <= 5)) i = 0;
+  addLog(ms, i); render(); drawHistory(); toast("Added " + clockTime(ms));
+}
+
+/* ---------- patterns ---------- */
+function windowStats(fromMs, toMs){
+  var p = pouches().filter(function(l){ return l.t >= fromMs && l.t < toMs; });
+  var r = S.logs.filter(function(l){ return l.k === "r" && l.t >= fromMs && l.t < toMs; });
+  var days = Math.max(1, Math.round((toMs - fromMs)/86400000));
+  var m = {}, firsts = [];
+  p.forEach(function(l){ (m[dayKey(l.t)] = m[dayKey(l.t)] || []).push(l); });
+  var gaps = [];
+  Object.keys(m).forEach(function(k){
+    var a = m[k];
+    for(var i=1;i<a.length;i++) gaps.push((a[i].t - a[i-1].t)/60000);
+    var d = new Date(a[0].t);
+    firsts.push(((d.getHours()*60 + d.getMinutes()) - S.dayStart + 1440) % 1440);
+  });
+  return {
+    count: p.length,
+    perDay: p.length / days,
+    medGap: gaps.length ? median(gaps) : null,
+    resists: r.length,
+    firstOffset: firsts.length ? median(firsts) : null
+  };
+}
+function offsetClock(off){
+  if(off === null) return "—";
+  var m = (S.dayStart + off) % 1440, h = Math.floor(m/60);
+  var ap = h < 12 ? "am" : "pm", hh = h % 12; if(hh === 0) hh = 12;
+  return hh + ":" + pad(m%60) + ap;
+}
+function money(n){ return "$" + n.toFixed(2); }
+function perPouchCost(){
+  return (S.tinPrice > 0 && S.tinCount > 0) ? S.tinPrice / S.tinCount : 0;
+}
+function delta(now, then, lowerIsBetter){
+  if(then === null || now === null || !isFinite(then) || then === 0) return "";
+  var pct = Math.round((now - then) / then * 100);
+  if(pct === 0) return "level";
+  var good = lowerIsBetter ? pct < 0 : pct > 0;
+  var col = good ? "var(--i1)" : "var(--i4)";
+  return '<span style="color:' + col + '">' + (pct > 0 ? "+" : "") + pct + '%</span>';
+}
+
+function drawPatterns(){
+  var now = Date.now(), D = 86400000;
+  var wk = windowStats(now - 7*D, now), pv = windowStats(now - 14*D, now - 7*D);
+
+  var trend = document.getElementById("trend");
+  if(!S.logs.length){
+    trend.innerHTML = '<p class="empty">Nothing logged yet.</p>';
+  } else {
+    trend.innerHTML =
+      '<div class="note"><h3>Last 7 days vs the 7 before</h3>' +
+      '<div class="wow">' +
+        wowRow("Pouches a day", wk.perDay.toFixed(1), delta(wk.perDay, pv.perDay, true)) +
+        wowRow("Typical gap", wk.medGap === null ? "—" : Math.round(wk.medGap) + "m",
+               delta(wk.medGap, pv.medGap, false)) +
+        wowRow("First one at", offsetClock(wk.firstOffset),
+               delta(wk.firstOffset, pv.firstOffset, false)) +
+        wowRow("Resisted", wk.resists, delta(wk.resists, pv.resists, false)) +
+        (perPouchCost() ? wowRow("Spent", money(wk.count * perPouchCost()),
+               delta(wk.count, pv.count, true)) : "") +
+      '</div></div>';
+  }
+
+  var grid = document.getElementById("stat-grid");
+  var m = byDay(), keys = Object.keys(m).sort();
+  var counts = keys.map(function(k){ return m[k].length; });
+  var gaps = sameDayGaps();
+  var hs = holds(), closed = hs.filter(function(h){ return h.held !== null; });
+  var avgHold = closed.length
+    ? dur(closed.reduce(function(s,h){ return s + h.held; }, 0) / closed.length) : "—";
+  var bestHold = closed.length
+    ? dur(Math.max.apply(null, closed.map(function(h){ return h.held; }))) : "—";
+  var totalEvents = pouches().length + hs.length;
+  var rate = totalEvents ? Math.round(hs.length / totalEvents * 100) + "%" : "—";
+
+  grid.innerHTML =
+    cell(counts.length ? (counts.reduce(function(a,b){return a+b;},0)/counts.length).toFixed(1) : "—", "average per day") +
+    cell(gaps.length ? Math.round(median(gaps)) + "m" : "—", "typical gap") +
+    cell(avgHold, "average hold") +
+    cell(bestHold, "longest hold") +
+    cell(rate, "cravings resisted") +
+    cell(perPouchCost() ? money(pouches().length * perPouchCost()) : "—", "spent, all time");
+
+  var recent = keys.slice(-14);
+  var maxD = Math.max.apply(null, recent.map(function(k){ return m[k].length; }).concat([1]));
+  var bars = document.getElementById("daybars"); bars.innerHTML = "";
+  recent.forEach(function(k){
+    var d = document.createElement("div");
+    d.style.height = (m[k].length / maxD * 100) + "%";
+    var rated = m[k].filter(function(l){ return l.i > 0; });
+    if(rated.length){
+      var avg = rated.reduce(function(s,l){ return s + l.i; }, 0) / rated.length;
+      d.style.background = RAMP[Math.round(avg)] || RAMP[0];
+    }
+    d.title = k + ": " + m[k].length;
+    bars.appendChild(d);
+  });
+  document.getElementById("ax-l").textContent = recent.length ? longDate(m[recent[0]][0].t) : "";
+  document.getElementById("ax-r").textContent = recent.length ? "today" : "";
+
+  var hours = new Array(24).fill(0);
+  pouches().forEach(function(l){ hours[new Date(l.t).getHours()]++; });
+  var maxH = Math.max.apply(null, hours.concat([1]));
+  var hb = document.getElementById("hourbars"); hb.innerHTML = "";
+  hours.forEach(function(v){
+    var d = document.createElement("div");
+    d.style.height = (v / maxH * 100) + "%";
+    if(v) d.style.background = "var(--i3)";
+    hb.appendChild(d);
+  });
+  document.getElementById("hx-l").textContent = "12am";
+  document.getElementById("hx-r").textContent = "11pm";
+
+  var gl = document.getElementById("gaplist"); gl.innerHTML = "";
+  var recentHolds = closed.slice(-12).reverse();
+  if(!recentHolds.length){
+    gl.innerHTML = '<p class="empty">No resisted cravings logged yet.</p>';
+  } else {
+    var maxHold = Math.max.apply(null, recentHolds.map(function(h){ return h.held; }));
+    recentHolds.forEach(function(h){
+      var row = document.createElement("div"); row.className = "gapbar";
+      var l = document.createElement("span"); l.className = "l"; l.textContent = clockTime(h.at);
+      var b = document.createElement("span"); b.className = "b";
+      b.style.width = Math.max(3, h.held / maxHold * 62) + "%";
+      b.style.background = RAMP[h.i];
+      var v = document.createElement("span");
+      v.style.fontSize = "12px"; v.style.color = "var(--graphite)";
+      v.textContent = dur(h.held);
+      row.appendChild(l); row.appendChild(b); row.appendChild(v);
+      gl.appendChild(row);
+    });
+  }
+}
+function wowRow(label, val, d){
+  return '<div><span>' + label + '</span><b>' + val + '</b><em>' + d + '</em></div>';
+}
+function cell(big, small){ return "<div><b>"+big+"</b><small>"+small+"</small></div>"; }
+
+/* ---------- settings ---------- */
+function syncSettings(){
+  document.getElementById("cap-n").value = S.cap;
+  document.getElementById("gap-n").value = S.gap;
+  document.getElementById("cap-sw").classList.toggle("on", S.capOn);
+  document.getElementById("gap-sw").classList.toggle("on", S.gapOn);
+  document.getElementById("daystart").value = pad(Math.floor(S.dayStart/60)) + ":" + pad(S.dayStart%60);
+  document.getElementById("sc-name").value = S.shortcutName;
+  document.getElementById("tin-price").value = S.tinPrice || "";
+  document.getElementById("tin-count").value = S.tinCount;
+  document.getElementById("rem-n").value = S.remindMins;
+  document.getElementById("rem-sw").classList.toggle("on", S.remindOn);
+  document.getElementById("auto-sw").classList.toggle("on", S.autoRemind);
+  document.getElementById("q-from").value = pad(Math.floor(S.quietFrom/60)) + ":" + pad(S.quietFrom%60);
+  document.getElementById("q-to").value = pad(Math.floor(S.quietTo/60)) + ":" + pad(S.quietTo%60);
+  document.getElementById("rem-note").textContent = (S.gapOn && S.gap > 0)
+    ? "Your gap rule is on, so reminders use " + S.gap + " minutes instead of this number."
+    : "";
+  document.getElementById("shortcut-hint").textContent =
+    "Must match your Shortcut's name exactly. It receives the interval in minutes as its input, so you never have to edit the Shortcut when this number changes.";
+  document.getElementById("remind-btn").textContent =
+    "Set a reminder for " + dur(reminderMinutes()*60000) + " from now";
+  document.getElementById("bl-hint").textContent = inBaseline()
+    ? (S.baselineStart ? "Day " + (baselineDays()+1) + " of 7. Rules stay off until it ends."
+                       : "Starts with your first log.")
+    : "Done. Adjust your cap and gap above whenever you want.";
+}
+
+function toast(msg){
+  var t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("on");
+  setTimeout(function(){ t.classList.remove("on"); }, 1900);
+}
+
+function toCSV(){
+  var rows = ["timestamp,date,time,hour,kind,craving,minutes_since_previous,held_minutes"];
+  var hs = holds(), prev = null;
+  S.logs.forEach(function(l){
+    var d = new Date(l.t), resist = l.k === "r";
+    var gap = (!resist && prev) ? Math.round((l.t - prev.t)/60000) : "";
+    var held = "";
+    if(resist){
+      var h = hs.filter(function(x){ return x.at === l.t; })[0];
+      if(h && h.held !== null) held = Math.round(h.held/60000);
+    }
+    rows.push([
+      d.toISOString(),
+      d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()),
+      pad(d.getHours())+":"+pad(d.getMinutes()),
+      d.getHours(),
+      resist ? "resisted" : "pouch",
+      l.i || "",
+      gap,
+      held
+    ].join(","));
+    if(!resist) prev = l;
+  });
+  return rows.join("\n");
+}
+
+/* ---------- inbound from Shortcuts ---------- */
+function ingestURL(){
+  var q = new URLSearchParams(location.search);
+  if(!q.has("t") && !q.has("log") && !q.has("i")) return;
+  var stamp = q.toString();
+  if(stamp === S.lastParam){ clean(); return; }   // don't double-log on a reload
+  var ms = Date.now(), raw = q.get("t");
+  if(raw){
+    var n = Number(raw);
+    var parsed = isFinite(n) && raw.length > 8 ? new Date(n) : new Date(raw);
+    if(!isNaN(parsed.getTime())) ms = parsed.getTime();
+  }
+  var i = parseInt(q.get("i"), 10); if(!(i >= 1 && i <= 5)) i = 0;
+  addLog(ms, i);
+  S.lastParam = stamp; save();
+  toast("Logged " + clockTime(ms));
+  clean();
+}
+function clean(){
+  try{ history.replaceState(null, "", location.pathname); }catch(e){}
+}
+
+/* ---------- wiring ---------- */
+function show(name){
+  ["now","history","patterns","settings"].forEach(function(v){
+    document.getElementById("v-"+v).classList.toggle("on", v === name);
+  });
+  document.querySelectorAll("nav button").forEach(function(b){
+    b.classList.toggle("on", b.dataset.v === name);
+  });
+  if(name === "history") drawHistory();
+  if(name === "patterns") drawPatterns();
+  if(name === "settings") syncSettings();
+  window.scrollTo(0,0);
+}
+
+document.querySelectorAll("nav button").forEach(function(b){
+  b.onclick = function(){ show(b.dataset.v); };
+});
+document.getElementById("log-btn").onclick = logNow;
+document.getElementById("resist-btn").onclick = logResist;
+document.getElementById("tin-price").onchange = function(){
+  S.tinPrice = Math.max(0, parseFloat(this.value) || 0); save(); syncSettings();
+};
+document.getElementById("tin-count").onchange = function(){
+  S.tinCount = Math.max(1, parseInt(this.value,10) || 15); save(); syncSettings();
+};
+document.getElementById("add-past").onclick = addPast;
+document.getElementById("remind-btn").onclick = function(){ fireReminder(true); };
+document.getElementById("rem-sw").onclick = function(){
+  S.remindOn = !S.remindOn; save(); syncSettings(); render();
+};
+document.getElementById("auto-sw").onclick = function(){
+  S.autoRemind = !S.autoRemind; save(); syncSettings();
+};
+document.getElementById("rem-n").onchange = function(){
+  S.remindMins = Math.max(10, parseInt(this.value,10) || 120); save(); syncSettings();
+};
+document.getElementById("q-from").onchange = function(){
+  var p = this.value.split(":"); S.quietFrom = (+p[0])*60 + (+p[1]); save();
+};
+document.getElementById("q-to").onchange = function(){
+  var p = this.value.split(":"); S.quietTo = (+p[0])*60 + (+p[1]); save();
+};
+document.getElementById("sc-name").onchange = function(){
+  S.shortcutName = this.value.trim() || "Gap"; save(); syncSettings();
+};
+
+document.getElementById("cap-sw").onclick = function(){ S.capOn = !S.capOn; save(); syncSettings(); render(); };
+document.getElementById("gap-sw").onclick = function(){ S.gapOn = !S.gapOn; save(); syncSettings(); render(); };
+document.getElementById("cap-n").onchange = function(){
+  S.cap = Math.max(1, parseInt(this.value,10) || 1); save(); syncSettings(); render();
+};
+document.getElementById("gap-n").onchange = function(){
+  S.gap = Math.max(5, parseInt(this.value,10) || 5); save(); syncSettings(); render();
+};
+document.getElementById("daystart").onchange = function(){
+  var p = this.value.split(":");
+  S.dayStart = (+p[0])*60 + (+p[1]); save(); render();
+};
+document.getElementById("bl-end").onclick = function(){
+  if(S.logs.length < 3){ toast("Log a few more first"); return; }
+  applySuggestion();
+};
+document.getElementById("copy-csv").onclick = function(){
+  var text = toCSV();
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(text).then(function(){ toast("CSV copied"); },
+      function(){ toast("Copy blocked — use the backup text"); });
+  } else { toast("Copy blocked — use the backup text"); }
+};
+document.getElementById("dl-csv").onclick = function(){
+  var blob = new Blob([toCSV()], {type:"text/csv"});
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "interval-" + dayKey(Date.now()) + ".csv";
+  document.body.appendChild(a); a.click(); a.remove();
+};
+document.getElementById("show-json").onclick = function(){
+  var box = document.getElementById("json-box");
+  box.hidden = !box.hidden;
+  document.getElementById("json-actions").hidden = box.hidden;
+  if(!box.hidden) box.value = JSON.stringify(S);
+};
+document.getElementById("restore").onclick = function(){
+  try{
+    var o = JSON.parse(document.getElementById("json-box").value);
+    if(!Array.isArray(o.logs)) throw new Error("no logs array");
+    for(var k in S){ if(o[k] !== undefined) S[k] = o[k]; }
+    S.logs.sort(function(a,b){ return a.t - b.t; });
+    save(); syncSettings(); render(); toast("Restored " + S.logs.length + " logs");
+  }catch(e){ toast("That text isn't a valid backup"); }
+};
+document.getElementById("wipe").onclick = function(){
+  if(!confirm("Delete every log on this device? This cannot be undone.")) return;
+  S.logs = []; S.baselineStart = null; S.baselineDone = false; S.lastParam = "";
+  save(); syncSettings(); render(); toast("Deleted");
+};
+
+load();
+ingestURL();
+syncSettings();
+render();
+resumeRate();
+setInterval(render, 1000);
+document.addEventListener("visibilitychange", function(){
+  if(!document.hidden){ render(); resumeRate(); }
+});
+</script>
+</body>
+</html>
